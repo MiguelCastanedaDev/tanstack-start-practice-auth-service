@@ -22,49 +22,84 @@ export const Route = createFileRoute('/login')({
   },
 
   component: LoginComponent,
-
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const credentials = await request.json()
+        console.log('LOGIN 1 - handler iniciado')
 
-        const response = await fetch(
-          'https://hono-practice-auth-service.mikeonlinemx.workers.dev/login',
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
+        try {
+          const credentials = await request.json()
+
+          console.log('LOGIN 2 - credentials recibidas')
+          console.log('email:', credentials.email)
+
+          const response = await fetch(
+            'https://hono-practice-auth-service.mikeonlinemx.workers.dev/login',
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(credentials),
             },
-            body: JSON.stringify(credentials),
-          },
-        )
+          )
 
-        const data = await response.json()
+          console.log(
+            'LOGIN 3 - Hono respondió:',
+            response.status,
+          )
 
-        if (!response.ok) {
+          const text = await response.text()
+
+          console.log(
+            'LOGIN 4 - respuesta Hono:',
+            text,
+          )
+
+          if (!response.ok) {
+            return new Response(text, {
+              status: response.status,
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            })
+          }
+
+          const data = JSON.parse(text)
+
+          const cookie = [
+            `auth_token=${encodeURIComponent(data.token)}`,
+            'HttpOnly',
+            'Path=/',
+            'SameSite=Lax',
+            'Secure',
+            'Max-Age=3600',
+          ].join('; ')
+
+          console.log('LOGIN 5 - devolviendo respuesta')
+
           return Response.json(data, {
-            status: response.status,
+            status: 200,
+            headers: {
+              'Set-Cookie': cookie,
+            },
           })
+        } catch (error) {
+          console.error('LOGIN ERROR:', error)
+
+          return Response.json(
+            {
+              message: 'Login handler failed',
+              error:
+                error instanceof Error
+                  ? error.message
+                  : String(error),
+            },
+            {
+              status: 500,
+            },
+          )
         }
-
-        const cookie = [
-          `auth_token=${encodeURIComponent(data.token)}`,
-          'HttpOnly',
-          'Path=/',
-          'SameSite=Lax',
-          'Max-Age=3600',
-
-          // Para localhost puedes dejarlo comentado.
-          // En producción usa HTTPS + Secure.
-          // 'Secure',
-        ].join('; ')
-
-        return Response.json(data, {
-          status: 200,
-          headers: {
-            'Set-Cookie': cookie,
-          },
-        })
       },
     },
   },
