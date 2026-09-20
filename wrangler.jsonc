@@ -7,7 +7,8 @@
 	"name": "tanstack-start-practice-auth-service",
 	"compatibility_date": "2025-09-02",
 	"compatibility_flags": [
-		"nodejs_compat"
+		"nodejs_compat",
+		"global_fetch_strictly_public"
 	],
 	"main": "@tanstack/react-start/server-entry",
 	"observability": {
